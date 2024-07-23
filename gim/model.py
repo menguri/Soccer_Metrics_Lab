@@ -12,3 +12,7 @@ import plotly.express as px
 
 if os.getcwd().split(os.sep)[-1] == "notebooks":
     os.chdir("../")
+
+
+
+# 정리 1. 

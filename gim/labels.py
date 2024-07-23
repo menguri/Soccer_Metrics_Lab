@@ -40,7 +40,14 @@ def game_remain(gamestates, duration_drop=True):
 # GD: goal difference
 def goal_difference(gamestates):
     goal = [0, 0]  # [home, away]
-    
+    gd_list = []
+    for idx, action in gamestates.iterrows():
+        gd_list.append(goal[0] - goal[1])
+        if (action.type_name == 'goal')&(action['T'] == 'Home'):
+            goal[0] += 1
+        elif (action.type_name == 'goal')&(action['T'] == 'Away'):
+            goal[1] += 1 
+    gamestates['gd'] = gd_list
     return gamestates
 
 
