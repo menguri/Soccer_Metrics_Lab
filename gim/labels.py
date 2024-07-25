@@ -36,7 +36,39 @@ def game_remain(gamestates, duration_drop=True):
     return gamestates
 
 
-# MP: manpower(For the feature manpower situation, negative values indicate short-handed, positive values indicate power play) 
+# MP: manpower(For the feature manpower situation, negative values indicate short-handed, positive values indicate power play)
+def is_out(row):
+    for e in ["foul_committed", "bad_behaviour"]:
+        try:
+            if e in row.extra and "card" in row.extra[e] and row.extra[e]["card"]["name"] in ["Second Yellow", "Red Card"] :
+                return 1
+        except:
+            break
+    return 0
+
+def get_manpower(dataset, games):
+    dataset['red'] = dataset.apply(is_out, axis = 1)
+    game = []
+
+    for g_id in tqdm.tqdm(list(games['game_id'].unique()), desc="Calculating manpower..."):
+        gamestates = dataset[dataset['game_id'] == g_id].copy()
+        home_team_id, away_team_id = gamestates[['home_team_id', 'away_team_id']].iloc[0].values
+        power = [11, 11]  # [Home player, Away player]
+        mp = []
+        for idx, action in gamestates.iterrows():
+            if action.red == 1 and action.team_id == home_team_id:
+                power[0] -= 1
+            elif action.red == 1 and action.team_id == action.away_team_id:
+                power[1] -= 1
+            mp.append(power[0] - power[1])
+
+        gamestates['mp'] = mp
+        game.append(gamestates)
+
+    dataset = pd.concat(game).sort_values("game_id").reset_index(drop=True)
+    return dataset
+
+
 # GD: goal difference
 def goal_difference(gamestates):
     goal = [0, 0]  # [home, away]
@@ -121,18 +153,18 @@ def get_angle_velocity(dataset, field_dims=(100, 100), window=2, polyorder=1):
         
         velocity_bet.append(np.array([vx, vy]))
 
-        if idx == 0:
-            print('첫 행 계산 과정')
-            print(f'ball_start: {ball_start_coo}')
-            print(f'ball_end: {ball_end_coo}')
-            print(f'goal_location: {goal_coo}')
-            print(f'end - start: {a}')
-            print(f'goal - end: {b}')
-            print(f'angle: {angle}')
-            print(f'X: {x}')
-            print(f'Y: {y}')
-            print(f'VX: {vx}')
-            print(f'VY: {vy}')
+        # if idx == 0:
+        #     print('첫 행 계산 과정')
+        #     print(f'ball_start: {ball_start_coo}')
+        #     print(f'ball_end: {ball_end_coo}')
+        #     print(f'goal_location: {goal_coo}')
+        #     print(f'end - start: {a}')
+        #     print(f'goal - end: {b}')
+        #     print(f'angle: {angle}')
+        #     print(f'X: {x}')
+        #     print(f'Y: {y}')
+        #     print(f'VX: {vx}')
+        #     print(f'VY: {vy}')
     
     dataset['Angle'] = angle_bet
     dataset['Velocity'] = velocity_bet

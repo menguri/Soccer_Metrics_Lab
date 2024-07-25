@@ -50,7 +50,6 @@ class TwoTowerLSTM(nn.Module):
             out = self.away_fc(out_away)
 
         # hidden state + softmax
-        output = self.fc(out)
         output = self.softmax(output)
 
         return output
