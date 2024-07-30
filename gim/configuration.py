@@ -1,6 +1,6 @@
 # Configuration
 learning_rate = 0.001
-Feature_number = 10 
+feature_number = 10 
 gamma = 0.99
 # LSTM을 스택킹하는 수
 num_layers = 2 
@@ -10,6 +10,6 @@ hidden_dim = 256
 input_dim = 10
 
 # 확인하지 않은 파라미터
-Iterate_num = 1  
+iterate_num = 1  
 output_dim = 1
 batch_size = 32

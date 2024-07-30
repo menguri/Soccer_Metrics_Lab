@@ -20,36 +20,33 @@ class TwoTowerLSTM(nn.Module):
         # Home team LSTM
         self.home_lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
         self.home_embedding = nn.Embedding(em_size, embedding_dim)
-        self.home_fc = nn.Linear(hidden_dim, output_dim)
-
         # Away team LSTM
         self.away_lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
         self.away_embedding = nn.Embedding(em_size, embedding_dim)
-        self.away_fc = nn.Linear(hidden_dim, output_dim)
 
-        # Last hiddent state and softmax
+        # Last hiddent layers and softmax
+        self.fc = nn.Linear(hidden_dim, output_dim)
         self.softmax = nn.Softmax()
 
 
-    def forward(self, seq, t):
+    def get_q(self, seq, t):
         # Initialize hidden state and cell state for home LSTM
         h0 = torch.zeros(self.num_layers, seq.size(0), self.hidden_dim).to(seq.device)
         c0 = torch.zeros(self.num_layers, seq.size(0), self.hidden_dim).to(seq.device)
  
-        # identifier
-        if t == 'Home':
+        # identifier - Home = 1 | Away = 2
+        if t == 1:
             # Forward propagate LSTM for home team
             out_home, _ = self.home_lstm(seq, (h0, c0))
             out_home = out_home[:, -1, :]  # Get the last time step's output
-            out_home = self.home_embedding(out_home)
-            out = self.home_fc(out_home)
+            out = self.home_embedding(out_home)
         else:
             out_away, _ = self.away_lstm(seq, (h0, c0))
             out_away = out_away[:, -1, :]  # Get the last time step's output
-            out_away = self.away_embedding(out_away)
-            out = self.away_fc(out_away)
+            out = self.away_embedding(out_away)
 
         # hidden state + softmax
+        output = self.fc(out)
         output = self.softmax(output)
 
         return output

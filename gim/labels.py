@@ -58,7 +58,7 @@ def get_manpower(dataset, games):
         for idx, action in gamestates.iterrows():
             if action.red == 1 and action.team_id == home_team_id:
                 power[0] -= 1
-            elif action.red == 1 and action.team_id == action.away_team_id:
+            elif action.red == 1 and action.team_id == away_team_id:
                 power[1] -= 1
             mp.append(power[0] - power[1])
 
@@ -75,9 +75,9 @@ def goal_difference(gamestates):
     gd_list = []
     for idx, action in gamestates.iterrows():
         gd_list.append(goal[0] - goal[1])
-        if (action.type_name == 'goal')&(action['T'] == 'Home'):
+        if (action.type_name == 'goal')&(action['T'] == 1):
             goal[0] += 1
-        elif (action.type_name == 'goal')&(action['T'] == 'Away'):
+        elif (action.type_name == 'goal')&(action['T'] == 2):
             goal[1] += 1 
     gamestates['gd'] = gd_list
     return gamestates
@@ -99,14 +99,14 @@ def onehot_action(dataset):
     return dataset
 
 
-# Team: Home, Away
+# Team: Home(1), Away(2)
 def get_team(dataset):
     team_list = []
     for idx, action in tqdm.tqdm(dataset.iterrows(), desc="Team discrete"):
         if action.team_id == action.home_team_id:
-            team_list.append('Home')
+            team_list.append(1)
         else:
-            team_list.append('Away')
+            team_list.append(2)
     dataset['T'] = team_list
     return dataset
 
@@ -172,18 +172,31 @@ def get_angle_velocity(dataset, field_dims=(100, 100), window=2, polyorder=1):
 
 
 # Reward: [home, away, neither]
-def get_reward(dataset):
+def get_reward(dataset, games):
 
     reward = [[0,0,0] for i in range(len(dataset))]
 
+    # goal -> reward 부여
     goal_idx = list(dataset[dataset['type_name'] == 'goal'].index)
-
     for idx in goal_idx:
         g = dataset.loc[idx]
         if g.team_id == g.home_team_id:
             reward[idx] = [1,0,0]
         else:
             reward[idx] = [0,1,0]
+    
+    # Neither -> [0,0,1] 부여  "an extra Neither indicator for the eventuality that neither team scores until the end of a game."
+    # 각 period 마지막에 아무것도 없이 끝난다면 neither 부여
+    neither_idx = []
+    for g_id in list(games['game_id'].unique()):
+        gamestates = dataset[dataset['game_id'] == g_id].copy()
+        for id in [1,2,3,4,5]:
+            try: 
+                if gamestates[gamestates['period_id']==id].iloc[-1]['type_name'] != "goal": 
+                    neither_idx.append(gamestates[gamestates['period_id']==id].index[-1])
+            except: break
+    for idx in neither_idx:
+        reward[idx] = [0,0,1]  
 
     dataset['Reward'] = reward
     return dataset
