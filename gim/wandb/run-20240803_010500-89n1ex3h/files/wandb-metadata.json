@@ -1,0 +1,80 @@
+{
+    "os": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.12.4",
+    "heartbeatAt": "2024-08-02T16:05:00.940339",
+    "startedAt": "2024-08-02T16:05:00.100282",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/mnt/c/Users/M207/Desktop/kang/code_factory/Soccer_Metrics_Lab/gim/labs_model.py",
+    "codePathLocal": "labs_model.py",
+    "codePath": "gim/labs_model.py",
+    "git": {
+        "remote": "https://github.com/menguri/Soccer_Metrics_Lab.git",
+        "commit": "2069db2f90cbcb08ae4e3a00b0e43fca119ad082"
+    },
+    "email": "tatalintelli@gmail.com",
+    "root": "/mnt/c/Users/M207/Desktop/kang/code_factory/Soccer_Metrics_Lab",
+    "host": "DESKTOP-LCSIT7M",
+    "username": "mingu",
+    "executable": "/home/mingu/anaconda3/envs/CIDA/bin/python",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 2112.006,
+        "min": 0.0,
+        "max": 0.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2112.006,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2112.006,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2112.006,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2112.006,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2112.006,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2112.006,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2112.006,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2112.006,
+            "min": 0.0,
+            "max": 0.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 250.98248672485352,
+            "used": 21.597858428955078
+        }
+    },
+    "memory": {
+        "total": 3.7739219665527344
+    }
+}

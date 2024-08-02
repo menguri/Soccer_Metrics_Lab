@@ -1,15 +1,13 @@
-# Configuration
-learning_rate = 0.001
-feature_number = 10 
-gamma = 0.99
-# LSTM을 스택킹하는 수
-num_layers = 2 
-# Hidden state의 features 수
+state_dim = 11
+action_dim = 22
 hidden_dim = 256
-# Input x에 대한 features 수
-input_dim = 10
-
-# 확인하지 않은 파라미터
-iterate_num = 1  
-output_dim = 1
-batch_size = 32
+lr = 0.001
+gamma = 0.99
+epsilon = 0.4
+batch_size = 10
+memory_size = 20000
+max_trace_length = 10
+output_dim = 3
+num_layers = 2
+embedding_dim = 1
+em_size = 1

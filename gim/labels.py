@@ -62,7 +62,7 @@ def get_manpower(dataset, games):
                 power[1] -= 1
             mp.append(power[0] - power[1])
 
-        gamestates['mp'] = mp
+        gamestates['MP'] = mp
         game.append(gamestates)
 
     dataset = pd.concat(game).sort_values("game_id").reset_index(drop=True)
@@ -79,7 +79,7 @@ def goal_difference(gamestates):
             goal[0] += 1
         elif (action.type_name == 'goal')&(action['T'] == 2):
             goal[1] += 1 
-    gamestates['gd'] = gd_list
+    gamestates['GD'] = gd_list
     return gamestates
 
 
@@ -115,7 +115,8 @@ def get_team(dataset):
 def get_angle_velocity(dataset, field_dims=(100, 100), window=2, polyorder=1):
 
     angle_bet = []
-    velocity_bet = []
+    ball_vx = []
+    ball_vy = []
 
     # 축구장 규격은 100 X 100 | 축구 골대 = (100, 50)
     for idx, action in tqdm.tqdm(dataset.iterrows(), desc="Calculating angle, velocity"):
@@ -151,7 +152,8 @@ def get_angle_velocity(dataset, field_dims=(100, 100), window=2, polyorder=1):
             vx = 0
             vy = 0
         
-        velocity_bet.append(np.array([vx, vy]))
+        ball_vx.append(vx)
+        ball_vy.append(vy)
 
         # if idx == 0:
         #     print('첫 행 계산 과정')
@@ -167,7 +169,8 @@ def get_angle_velocity(dataset, field_dims=(100, 100), window=2, polyorder=1):
         #     print(f'VY: {vy}')
     
     dataset['Angle'] = angle_bet
-    dataset['Velocity'] = velocity_bet
+    dataset['VX'] = ball_vx
+    dataset['VY'] = ball_vy
     return dataset
 
 

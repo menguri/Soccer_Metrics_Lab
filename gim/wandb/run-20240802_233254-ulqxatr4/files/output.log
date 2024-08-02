@@ -1,0 +1,12 @@
+
+[34m[1mwandb[39m[22m: [33mWARNING[39m Calling wandb.run.save without any arguments is deprecated.Changes to attributes are automatically persisted.
+Traceback (most recent call last):
+  File "/mnt/c/Users/M207/Desktop/kang/code_factory/Soccer_Metrics_Lab/gim/labs_model.py", line 87, in <module>
+    main()
+  File "/mnt/c/Users/M207/Desktop/kang/code_factory/Soccer_Metrics_Lab/gim/labs_model.py", line 78, in main
+    home_loss, away_loss = agent.update_model()
+                           ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/M207/Desktop/kang/code_factory/Soccer_Metrics_Lab/gim/model.py", line 120, in update_model
+    next_states = [states[0]] + next_states
+                   ~~~~~~^^^
+IndexError: list index out of range
