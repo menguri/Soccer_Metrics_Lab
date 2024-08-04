@@ -5,13 +5,9 @@ import torch.optim as optim
 import numpy as np
 
 
-# 하나의 GOAL 이벤트를 학습하며, 골 이벤트 중간의 교대하며 일어나는 Home, Away 선수의 플레이를 각각 다른 LSTM에 넣어주는 개념
-# 들어오는 것은 => 10개의 features를 담고 trace length만큼의 seq를 담은 states
-
-
 # Define the Two-Tower LSTM model for Q-value estimation
 class TwoTowerLSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, action_dim, output_dim, num_layers, embedding_dim, em_size):
+    def __init__(self, input_dim, hidden_dim, action_dim, output_dim, num_layers):
         super(TwoTowerLSTM, self).__init__()
         # hidden staets, hidden layers => 256
         self.hidden_dim = hidden_dim
@@ -31,10 +27,10 @@ class TwoTowerLSTM(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
 
-    def home_forward(self, seq, action, t):
+    def home_forward(self, seq, action):
         # state + action
         seq = torch.cat((seq, action), dim=2)
-
+        # print(f"seq : {seq}")
         # Initialize hidden state and cell state for home LSTM
         h0 = torch.zeros(self.num_layers, seq.size(0), self.hidden_dim).to(seq.device)
         c0 = torch.zeros(self.num_layers, seq.size(0), self.hidden_dim).to(seq.device)
@@ -42,6 +38,7 @@ class TwoTowerLSTM(nn.Module):
         # Forward propagate LSTM for home team
         out_home, _ = self.home_lstm(seq, (h0, c0))
         out = out_home[:, -1, :]  # Get the last time step's output
+        # print(f"lstm_output : {out}")
         # out = self.home_embedding(out_home)
 
         # hidden state + softmax
@@ -52,7 +49,7 @@ class TwoTowerLSTM(nn.Module):
         return output
     
     
-    def away_forward(self, seq, action, t):
+    def away_forward(self, seq, action):
         # state + action
         seq = torch.cat((seq, action), dim=2)
 

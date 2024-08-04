@@ -6,23 +6,8 @@ from scipy import signal
 
 
 # GTR: game time remaining | ED: event duration
-def game_remain(gamestates, duration_drop=True):
-    period_sec = []
-    end_dur = 0
-    ## GTR 구하기 : 경기 총 시간(s) - 해당 time_seconds
-    for id in [1,2,3,4,5]:
-        try: 
-            period_sec.append(gamestates[gamestates['period_id']==id]['time_seconds'].iloc[-1])
-            end_dur = gamestates[gamestates['period_id']==id]['duration'].iloc[-1]
-        except: break
+def game_remain(gamestates, duration_drop=False):
 
-    gtr = []
-    total_sec = sum(period_sec) + end_dur
-
-    for id in range(0, len(period_sec)): 
-        gtr += [total_sec - sum(period_sec[:id]) - time for time in list(gamestates[gamestates['period_id'] == id+1]['time_seconds'])]
-    gamestates['GTR'] = np.round(gtr, 4)  
-    
     ## ED 구하기
     if duration_drop == True:
         gamestates.dropna(subset='duration', axis=0, inplace=True)
@@ -32,6 +17,26 @@ def game_remain(gamestates, duration_drop=True):
                                           gamestates['duration'], gamestates['new_dur'])
         
         gamestates.drop('new_dur', axis=1, inplace=True)
+    
+
+    ## GTR 구하기 : 경기 총 시간(s) - 해당 time_seconds
+    period_sec = []
+    end_dur = 0
+    for id in [1,2,3,4,5]:
+        try: 
+            period_sec.append(gamestates[gamestates['period_id']==id]['time_seconds'].iloc[-1])
+            end_dur = gamestates[gamestates['period_id']==id]['ED'].iloc[-1]
+        except: break
+
+    if len(period_sec) < 1:
+        print(f"game : {gamestates}")
+        return gamestates
+    gtr = []
+    total_sec = sum(period_sec) + end_dur
+
+    for id in range(0, len(period_sec)): 
+        gtr += [round((total_sec - sum(period_sec[:id]) - time)/total_sec * 100, 2) for time in list(gamestates[gamestates['period_id'] == id+1]['time_seconds'])]
+    gamestates['GTR'] = np.round(gtr, 4)  
 
     return gamestates
 

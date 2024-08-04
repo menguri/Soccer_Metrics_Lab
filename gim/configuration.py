@@ -1,13 +1,10 @@
 state_dim = 11
 action_dim = 22
 hidden_dim = 256
-lr = 0.001
+lr = 1e-4
 gamma = 0.99
-epsilon = 0.4
-batch_size = 10
-memory_size = 20000
+batch_size = 30
+memory_size = 10000
 max_trace_length = 10
 output_dim = 3
 num_layers = 2
-embedding_dim = 1
-em_size = 1
