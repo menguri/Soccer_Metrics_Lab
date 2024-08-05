@@ -60,11 +60,19 @@ wandb.config.update(args)
 
 
 DATA_STORE = "./datastore"
-
 DIR_GAMES_ALL = os.listdir(DATA_STORE)
 number_of_total_game = len(DIR_GAMES_ALL)
-
 model_path = "save/gim_result.ckpt"
+
+
+def checkpoint_model(PATH, EPOCH, model, h_optimizer, a_optimizer):
+    ckp_path = f"./ckpt_save/{PATH}/{EPOCH}/model.ckpt"
+    torch.save({
+                'epoch': EPOCH,
+                'model_state_dict': model.state_dict(),
+                'home_optimizer_state_dict': h_optimizer.state_dict(),
+                'away_optimizer_state_dict': a_optimizer.state_dict(),
+                }, ckp_path)   
 
 
 def create_mini_batches(data, batch_size):
@@ -72,8 +80,9 @@ def create_mini_batches(data, batch_size):
     return mini_batches
 
 
-class SarsaLSTMAgent:
+class SarsaLSTMAgent(nn.Module):
     def __init__(self, state_dim, action_dim, hidden_dim, lr, gamma, batch_size, memory_size, max_trace_length, output_dim, num_layers):
+        super(SarsaLSTMAgent, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.hidden_dim = hidden_dim
@@ -87,7 +96,6 @@ class SarsaLSTMAgent:
         # home, away optimizer 따로 구현
         self.home_optimizer = optim.Adam(list(self.model.home_lstm.parameters())+list(self.model.fc1.parameters())+list(self.model.fc2.parameters()), lr=lr)
         self.away_optimizer = optim.Adam(list(self.model.away_lstm.parameters())+list(self.model.fc1.parameters())+list(self.model.fc2.parameters()), lr=lr)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
         self.loss_fn = nn.MSELoss()
     
     def store_init(self):
@@ -97,7 +105,7 @@ class SarsaLSTMAgent:
         self.memory.append((state, action, reward, next_state, next_action, team, trace_length))
 
     def sample_batch(self):
-        # 무작위로 state index 선택, 마지막 state(골 or 게임 종료)는 무조건 포함. | batch_size는 memory의 1/5로 임의 설정
+        # 무작위로 state index 선택, 마지막 state(골 or 게임 종료)는 무조건 포함. | mini_batch_size는 16
         total = create_mini_batches([i for i in range(len(self.memory))], 32)
         total_batch = []
 
@@ -119,8 +127,8 @@ class SarsaLSTMAgent:
             total_batch.append(batch_m)
 
         return total_batch
-    
 
+    
     def calc_q_loss(self, batch, team):
         q_hat_target = [[], []]
 
@@ -138,7 +146,6 @@ class SarsaLSTMAgent:
                 "neither_prob": q_values_a[0][2]
                 })
 
-            print(f"prob: [{q_values_a[0][0]}, {q_values_a[0][1]}, {q_values_a[0][2]}]")
             # target = reward_t+1 + q_t+1
             target_q_values = b[2][0][0][team-1] + next_q_values_a[0][team-1]
             q_hat_target[0].append(q_values_a[0][team-1])
@@ -223,32 +230,46 @@ class SarsaLSTMAgent:
                     trace_length = 10
                 state = s[t-trace_length:t+1]
                 action = a[t-trace_length:t+1]
+                action = [np.array(ac) for ac in action]
                 state_t = torch.FloatTensor(np.array(state, dtype=np.float32)).view(1, len(state), -1)                                                                                                                                             
                 action_t = torch.FloatTensor(np.array(action, dtype=np.float32)).view(1, len(action), -1) 
                 if s[t][-1] < 0:
-                    output = self.model.home_forward(self, state_t, action_t)
+                    output = self.model.home_forward(state_t, action_t)
                 else:
-                    output = self.model.away_forward(self, state_t, action_t)
+                    output = self.model.away_forward(state_t, action_t)
+
+                y.append(output.detach()[0])
+                
+                # 마지막 state는 trace_length 업데이트 하지 않는다.
+                if t+1 == len(s):
+                    break
+
                 if s[t][-1] == s[t+1][-1]:
                     trace_length += 1
                 else:
                     trace_length = 0
-                
-                y.append(output)
         return y
 
 
-def plot_qvalue_goal(game, y):
+def plot_qvalue_goal(game, y, id, epoch=0):
+    y = np.array(y)
     gtr = game[:,0]
     gd = game[:,4]
-    fig, ax = plt.subplots(figsize=(9, 6))
+    
+    fig, ax1 = plt.subplots(figsize=(15, 10))
+    ax1.set_xlabel('GTR')
+    ax1.set_ylabel('Prob')
+    line1 = ax1.plot(gtr, y[:,0], 'red', label='Home')
+    line2 = ax1.plot(gtr, y[:,1], 'blue', label='Away')
+    line3 = ax1.plot(gtr, y[:,2], 'yellow', label='Neither')
 
-    plt.subplot(121)
-    plt.plot(gtr, y[:,0], 'r')
-    plt.plot(gtr, y[:,1], 'b')
-    plt.plot(gtr, y[:,2], 'y')
+    ax2 = ax1.twinx()
+    ax2.set_ylabel('GD')
+    line4 = ax2.plot(gtr, gd, 'deeppink', label='Goal Difference', linestyle="--")
 
-    plt.subplot(122)
-    plt.plot(gtr, gd, 'r')
+    lines = line1 + line2 + line3 + line4
+    labels = [l.get_label() for l in lines]
+    ax1.legend(lines, labels, loc='upper right')
 
     plt.show()
+    plt.savefig(f'./plot/{id}_{epoch}_plot.jpg')

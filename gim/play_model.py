@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import ast
 import random as ran
+from time import time, sleep
 import datetime
 import matplotlib.pyplot as plt
 import plotly
@@ -22,7 +23,7 @@ from skimage.transform import resize
 from skimage.color import rgb2gray
 import statistics
 plt.ion()
-from model import SarsaLSTMAgent, plot_qvalue_goal
+from model import SarsaLSTMAgent, plot_qvalue_goal, checkpoint_model
 
 # Experiment tracking : Wandb
 import wandb
@@ -37,8 +38,9 @@ args = {
 wandb.config.update(args)
 
 
-DATA_STORE = "./datastore"
 
+
+DATA_STORE = "./datastore"
 DIR_GAMES_ALL = os.listdir(DATA_STORE)
 number_of_total_game = len(DIR_GAMES_ALL)
 
@@ -49,7 +51,7 @@ def main():
     agent = SarsaLSTMAgent(state_dim, action_dim, hidden_dim, lr, gamma, batch_size, memory_size, max_trace_length, output_dim, num_layers)
     epoch = 0
     # Train agent during 30 epoch
-    while epoch <= 1:
+    while epoch <= 30:
         epoch += 1
         # episode = num(goal sequence) | "We divide a soccer game into goal-scoring episodes"
         for game in DIR_GAMES_ALL:
@@ -79,28 +81,63 @@ def main():
 
                 # agent update (calc_q_loss)
                 batch_loss = agent.update_model()
-                wandb.log({"Home Training loss": statistics.mean(batch_loss[0])})
-                wandb.log({"Away Training loss": statistics.mean(batch_loss[1])})
-                print(f"{game} game's {epi} episode >> Home loss: {statistics.mean(batch_loss[0])} | Away loss : {statistics.mean(batch_loss[1])}")
+                try:
+                    wandb.log({"Home Training loss": statistics.mean(batch_loss[0])})
+                    wandb.log({"Away Training loss": statistics.mean(batch_loss[1])})
+                    print(f"{game} game's {epi} episode >> Home loss: {statistics.mean(batch_loss[0])} | Away loss : {statistics.mean(batch_loss[1])}")
+                except:
+                    pass
 
             # game마다 memory init
             agent.store_init()
-        print("Epoch: {}".format(epoch))
+            print(f"------------------ Epoch: {epoch} / Game: {game} ------------------")
+
+
+        # epoch 1 마다 저장 및 plot 그리기
+        if epoch % 1 == 0:
+            checkpoint_model(f"{lr}lr_{batch_size}batchsize", epoch, agent, agent.home_optimizer, agent.away_optimizer)
+            # Plot
+            # 모델 예측
+            game_id = 7525
+            y = agent.predict(7525)
+            game = []
+            episode = os.listdir(DATA_STORE + f'/{7525}')
+            for epi in episode:
+                # load data
+                s = np.load(DATA_STORE + f'/{7525}/{epi}/state.npy', allow_pickle=True)
+                game += s.tolist()
+            plot_qvalue_goal(np.array(game), y, game_id, epoch)
+            sleep(2)
+
+        print("------------------ Epoch: {} ------------------".format(epoch))
 
     
     # 모델 저장
-    torch.save(agent.state_dict(), 'sarsa_net.pth')
+    path = './last_model.pth'
+    torch.save(agent.state_dict(), path)
 
+
+if __name__ == "__main__":
+    main()
+
+
+
+# plot 그리기
+plot = False
+
+if plot == True:
+    # Plot
+    path = './last_model.pth'
+    agent = SarsaLSTMAgent(state_dim, action_dim, hidden_dim, lr, gamma, batch_size, memory_size, max_trace_length, output_dim, num_layers)
+    agent.load_state_dict(torch.load(path))
+    agent.eval()
     # 모델 예측
+    game_id = 7525
     y = agent.predict(7525)
     game = []
     episode = os.listdir(DATA_STORE + f'/{7525}')
     for epi in episode:
         # load data
-        s = np.load(DATA_STORE + f'/{game}/{epi}/state.npy', allow_pickle=True)
-        game.append(s)
-    plot_qvalue_goal(np.array(game), y)
-
-
-if __name__ == "__main__":
-    main()
+        s = np.load(DATA_STORE + f'/{7525}/{epi}/state.npy', allow_pickle=True)
+        game += s.tolist()
+    plot_qvalue_goal(np.array(game), y, id)

@@ -98,7 +98,7 @@ def onehot_action(dataset):
         one_hot_vector = [0]*(len(type_to_index))
         index = type_to_index[action.type_name]
         one_hot_vector[index] = 1
-        type_list.append(one_hot_vector)
+        type_list.append(np.array(one_hot_vector))
     
     dataset['Action'] = type_list
     return dataset
