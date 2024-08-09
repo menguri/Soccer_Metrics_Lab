@@ -1,4 +1,5 @@
 state_dim = 11
+feature_num = 11
 action_dim = 22
 hidden_dim = 256
 lr = 1e-4
@@ -8,3 +9,18 @@ memory_size = 10000
 max_trace_length = 10
 output_dim = 3
 num_layers = 2
+
+MODEL_TYPE = "two_tower"
+MAX_TRACE_LENGTH = 10
+FEATURE_NUMBER = 34
+BATCH_SIZE = 32
+GAMMA = 1
+H_SIZE = 512
+USE_HIDDEN_STATE = False
+model_train_continue = False
+SCALE = True
+FEATURE_TYPE = 11
+ITERATE_NUM = 30
+learning_rate = 1e-4
+SPORT = "SOCCER"
+save_mother_dir = "/LOG_NETWORK"

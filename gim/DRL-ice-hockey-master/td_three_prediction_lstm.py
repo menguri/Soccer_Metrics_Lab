@@ -101,7 +101,7 @@ def train_network(sess, model):
             break
         else:
             converge_flag = True
-        # 모든 게임 불러오기
+        # 게임 불러오기
         for dir_game in DIR_GAMES_ALL:
 
             if checkpoint and checkpoint.model_checkpoint_path:
@@ -114,6 +114,7 @@ def train_network(sess, model):
             game_number += 1
             game_cost_record = []
             game_files = os.listdir(DATA_STORE + "/" + dir_game)
+            # 게임 별로 reward, input, trace가 저장되어 있다.
             for filename in game_files:
                 if "dynamic_rnn_reward" in filename:
                     reward_name = filename

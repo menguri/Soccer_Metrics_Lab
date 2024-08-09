@@ -74,20 +74,6 @@ def get_manpower(dataset, games):
     return dataset
 
 
-# GD: goal difference
-def goal_difference(gamestates):
-    goal = [0, 0]  # [home, away]
-    gd_list = []
-    for idx, action in gamestates.iterrows():
-        gd_list.append(goal[0] - goal[1])
-        if (action.type_name == 'goal')&(action['T'] == 1):
-            goal[0] += 1
-        elif (action.type_name == 'goal')&(action['T'] == 2):
-            goal[1] += 1 
-    gamestates['GD'] = gd_list
-    return gamestates
-
-
 # Action: one-hot representation
 def onehot_action(dataset):
     type_uni = dataset['type_name'].unique()
@@ -111,9 +97,27 @@ def get_team(dataset):
         if action.team_id == action.home_team_id:
             team_list.append(1)
         else:
-            team_list.append(2)
+            team_list.append(-1)
     dataset['T'] = team_list
     return dataset
+
+
+# GD: goal difference
+def goal_difference(gamestates):
+    goal = [0, 0]  # [home, away]
+    gd_list = []
+    for idx, action in gamestates.iterrows():
+        gd_list.append(goal[0] - goal[1])
+        if (action.type_name == 'goal')&(action['T'] == 1):
+            goal[0] += 1
+        elif (action.type_name == 'goal')&(action['T'] == -1):
+            goal[1] += 1 
+        elif (action.type_name == 'owngoal')&(action['T'] == 1):
+            goal[1] += 1 
+        elif (action.type_name == 'goal')&(action['T'] == -1):
+            goal[0] += 1 
+    gamestates['GD'] = gd_list
+    return gamestates
 
 
 # Angle: between ball and goal | Velocity: (end_location - start_location) / time
@@ -182,19 +186,28 @@ def get_angle_velocity(dataset, field_dims=(100, 100), window=2, polyorder=1):
 # Reward: [home, away, neither]
 def get_reward(dataset, games):
 
-    reward = [[0,0,0] for i in range(len(dataset))]
+    reward = [0 for i in range(len(dataset))]
 
     # goal -> reward 부여
+    # Home : 1 | Away : -1
     goal_idx = list(dataset[dataset['type_name'] == 'goal'].index)
     for idx in goal_idx:
         g = dataset.loc[idx]
         if g.team_id == g.home_team_id:
-            reward[idx] = [1,0,0]
+            reward[idx] = 1
         else:
-            reward[idx] = [0,1,0]
+            reward[idx] = -1
+    # owngoal -> reward 부여
+    owngoal_idx = list(dataset[dataset['type_name'] == 'owngoal'].index)
+    for idx in owngoal_idx:
+        g = dataset.loc[idx]
+        if g.team_id == g.home_team_id:
+            reward[idx] = -1
+        else:
+            reward[idx] = 1
     
-    # Neither -> [0,0,1] 부여  "an extra Neither indicator for the eventuality that neither team scores until the end of a game."
-    # 각 period 마지막에 아무것도 없이 끝난다면 neither 부여
+    # # Neither -> [0,0,1] 부여  "an extra Neither indicator for the eventuality that neither team scores until the end of a game."
+    # # 각 period 마지막에 아무것도 없이 끝난다면 neither 부여
     neither_idx = []
     for g_id in list(games['game_id'].unique()):
         gamestates = dataset[dataset['game_id'] == g_id].copy()
@@ -204,7 +217,7 @@ def get_reward(dataset, games):
                     neither_idx.append(gamestates[gamestates['period_id']==id].index[-1])
             except: break
     for idx in neither_idx:
-        reward[idx] = [0,0,1]  
+        reward[idx] = 2  
 
     dataset['Reward'] = reward
     return dataset
