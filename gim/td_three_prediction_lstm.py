@@ -31,14 +31,14 @@ number_of_total_game = len(DIR_GAMES_ALL)
 
 
 # Experiment tracking : Wandb
-import wandb
-wandb.init(project='Sarsa with LSTM')
-wandb.run.name = 'td_three_prediction_1'
-wandb.run.save()
-args = {
-    "learning_rate": lr,
-}
-wandb.config.update(args)
+# import wandb
+# wandb.init(project='Sarsa with LSTM')
+# wandb.run.name = 'td_three_prediction_1'
+# wandb.run.save()
+# args = {
+#     "learning_rate": lr,
+# }
+# wandb.config.update(args)
 
 
 # Cost 저장
@@ -230,9 +230,9 @@ def train_network(model):
                         y_away = float((r_t_batch[i])[1]) + GAMMA * (readout_t1_batch[i]).tolist()[1]
                         y_end = float((r_t_batch[i])[2]) + GAMMA * (readout_t1_batch[i]).tolist()[2]
 
-                        wandb.log({"Home_prob": (readout_t1_batch[i]).tolist()[0]})
-                        wandb.log({"Away_prob": (readout_t1_batch[i]).tolist()[1]})
-                        wandb.log({"End_prob": (readout_t1_batch[i]).tolist()[2]})
+                        # wandb.log({"Home_prob": (readout_t1_batch[i]).tolist()[0]})
+                        # wandb.log({"Away_prob": (readout_t1_batch[i]).tolist()[1]})
+                        # wandb.log({"End_prob": (readout_t1_batch[i]).tolist()[2]})
                         # print(f"no terminal or cut : {[y_home, y_away, y_end]}")
                         y_batch.append([y_home, y_away, y_end])
 
@@ -248,8 +248,8 @@ def train_network(model):
                 # 출력 및 디버깅 정보
                 diff = torch.mean(torch.abs(y_batch_tensor - read_out)).item()
                 cost_out = torch.mean(torch.square(y_batch_tensor - read_out)).item()
-                wandb.log({"td_diff": diff})
-                wandb.log({"td_cost": cost_out})
+                # wandb.log({"td_diff": diff})
+                # wandb.log({"td_cost": cost_out})
 
                 v_diff_record.append(diff)
 
@@ -286,7 +286,6 @@ def train_network(model):
                     game_diff_record_dict.update({dir_game: v_diff_record_average})
                     break
 
-                    # break
             cost_per_game_average = sum(game_cost_record) / len(game_cost_record)
             write_game_average_csv([{"iteration": str(game_number / number_of_total_game + 1), "game": game_number,
                                      "cost_per_game_average": cost_per_game_average}])

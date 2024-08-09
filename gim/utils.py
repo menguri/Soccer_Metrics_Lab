@@ -28,8 +28,6 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
     batch_return = []
     home_away_indicator = []
     current_batch_length = 0
-    print(f"input : {state_input}")
-    print(f"num : {train_number}")
     while current_batch_length < BATCH_SIZE:
         s_t1 = state_input[train_number]
         # if len(s_t1) < 10 or len(s_t0) < 10:
@@ -59,14 +57,19 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
             s_reward_t0 = reward[train_number - 1][0]
         except IndexError:
             raise IndexError("s_reward wrong with index")
-        train_number += 1
+        
+        print(f"train_number + 1 : {train_number + 1}")
+        print(f"train_len : {train_len}")
         if train_number + 1 == train_len:
+            print("여기 아니야?")
             # t1, t0의 index를 가져옴
             trace_length_index_t1 = s_length_t1 - 1
             trace_length_index_t0 = s_length_t0 - 1
             # t1, t0의 reward를 nparray 형태로 추출
             r_t0 = np.asarray([s_reward_t0[trace_length_index_t0]])
             r_t1 = np.asarray([s_reward_t1[trace_length_index_t1]])
+
+            train_number += 1
             if r_t0 == [float(0)]:
                 r_t0_combine = [float(0), float(0), float(0)]
                 batch_return.append((s_t0, s_t1, r_t0_combine, s_length_t0, s_length_t1, 0, 0))
@@ -131,7 +134,8 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
 
             s_t0 = s_t1
             break
-
+        
+        train_number += 1
         trace_length_index_t0 = s_length_t0 - 1
         r_t0 = np.asarray([s_reward_t0[trace_length_index_t0]])
         if r_t0 != [float(0)]:
