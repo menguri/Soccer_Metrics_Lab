@@ -58,10 +58,7 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
         except IndexError:
             raise IndexError("s_reward wrong with index")
         
-        print(f"train_number + 1 : {train_number + 1}")
-        print(f"train_len : {train_len}")
         if train_number + 1 == train_len:
-            print("여기 아니야?")
             # t1, t0의 index를 가져옴
             trace_length_index_t1 = s_length_t1 - 1
             trace_length_index_t0 = s_length_t0 - 1
@@ -77,9 +74,9 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
                 if r_t1 == float(0):
                     r_t1_combine = [float(0), float(0), float(1)]
                 elif r_t1 == float(-1):
-                    r_t1_combine = [float(0), float(1), float(1)]
+                    r_t1_combine = [float(0), float(1), float(0)]
                 elif r_t1 == float(1):
-                    r_t1_combine = [float(1), float(0), float(1)]
+                    r_t1_combine = [float(1), float(0), float(0)]
                 else:
                     raise ValueError("incorrect r_t1")
 
@@ -97,9 +94,9 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
                 if r_t1 == float(0):
                     r_t1_combine = [float(0), float(0), float(1)]
                 elif r_t1 == float(-1):
-                    r_t1_combine = [float(0), float(1), float(1)]
+                    r_t1_combine = [float(0), float(1), float(0)]
                 elif r_t1 == float(1):
-                    r_t1_combine = [float(1), float(0), float(1)]
+                    r_t1_combine = [float(1), float(0), float(0)]
                 else:
                     raise ValueError("incorrect r_t1")
 
@@ -117,9 +114,9 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
                 if r_t1 == float(0):
                     r_t1_combine = [float(0), float(0), float(1)]
                 elif r_t1 == float(-1):
-                    r_t1_combine = [float(0), float(1), float(1)]
+                    r_t1_combine = [float(0), float(1), float(0)]
                 elif r_t1 == float(1):
-                    r_t1_combine = [float(1), float(0), float(1)]
+                    r_t1_combine = [float(1), float(0), float(0)]
                 else:
                     raise ValueError("incorrect r_t1")
 

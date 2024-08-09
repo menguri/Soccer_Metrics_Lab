@@ -31,14 +31,14 @@ number_of_total_game = len(DIR_GAMES_ALL)
 
 
 # Experiment tracking : Wandb
-# import wandb
-# wandb.init(project='Sarsa with LSTM')
-# wandb.run.name = 'td_three_prediction_1'
-# wandb.run.save()
-# args = {
-#     "learning_rate": lr,
-# }
-# wandb.config.update(args)
+import wandb
+wandb.init(project='Sarsa with LSTM')
+wandb.run.name = 'td_three_prediction_1'
+wandb.run.save()
+args = {
+    "learning_rate": lr,
+}
+wandb.config.update(args)
 
 
 # Cost 저장
@@ -97,10 +97,11 @@ def train_network(model):
 
     # loading network
     if model_train_continue:
-        checkpoint = torch.load(SAVED_NETWORK)  # Load checkpoint
+        check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{8698}.pt")
+        checkpoint = torch.load(check_path)  # Load checkpoint
         model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        check_point_game_number = checkpoint['epoch']
+        model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        check_point_game_number = 135
         game_number_checkpoint = check_point_game_number % number_of_total_game
         game_number = check_point_game_number
         game_starting_point = 0
@@ -125,7 +126,7 @@ def train_network(model):
         for dir_game in DIR_GAMES_ALL:
 
             if model_train_continue:
-                if checkpoint and checkpoint.model_checkpoint_path:  # go the check point data
+                if checkpoint and 135:  # go the check point data
                     game_starting_point += 1
                     if game_number_checkpoint + 1 > game_starting_point:
                         continue
@@ -154,7 +155,7 @@ def train_network(model):
             
             # episode length가 2도 안될 경우, s_t0 값만 있기에 학습 불가
             # 경기 시작하자마자 슛 -> 슛과 골 이벤트가 기록되어 있어 length=2
-            if len(reward) != 2:
+            if len(reward) < 2:
                 continue
 
             # state_input 로드
@@ -230,9 +231,9 @@ def train_network(model):
                         y_away = float((r_t_batch[i])[1]) + GAMMA * (readout_t1_batch[i]).tolist()[1]
                         y_end = float((r_t_batch[i])[2]) + GAMMA * (readout_t1_batch[i]).tolist()[2]
 
-                        # wandb.log({"Home_prob": (readout_t1_batch[i]).tolist()[0]})
-                        # wandb.log({"Away_prob": (readout_t1_batch[i]).tolist()[1]})
-                        # wandb.log({"End_prob": (readout_t1_batch[i]).tolist()[2]})
+                        wandb.log({"Home_prob": (readout_t1_batch[i]).tolist()[0]})
+                        wandb.log({"Away_prob": (readout_t1_batch[i]).tolist()[1]})
+                        wandb.log({"End_prob": (readout_t1_batch[i]).tolist()[2]})
                         # print(f"no terminal or cut : {[y_home, y_away, y_end]}")
                         y_batch.append([y_home, y_away, y_end])
 
@@ -248,8 +249,8 @@ def train_network(model):
                 # 출력 및 디버깅 정보
                 diff = torch.mean(torch.abs(y_batch_tensor - read_out)).item()
                 cost_out = torch.mean(torch.square(y_batch_tensor - read_out)).item()
-                # wandb.log({"td_diff": diff})
-                # wandb.log({"td_cost": cost_out})
+                wandb.log({"td_diff": diff})
+                wandb.log({"td_cost": cost_out})
 
                 v_diff_record.append(diff)
 
@@ -273,17 +274,20 @@ def train_network(model):
                     print("cost of the network is" + str(cost_out))
 
                 if terminal:
-                    # save progress after a game
-                    save_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{game_number}.pt")
-                    # 모델의 상태 딕셔너리(가중치 등)를 저장
-                    torch.save({
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': model.optimizer.state_dict(),
-                        'game_number': game_number,
-                        'global_step': global_counter
-                    }, save_path)
                     v_diff_record_average = sum(v_diff_record) / len(v_diff_record)
                     game_diff_record_dict.update({dir_game: v_diff_record_average})
+
+
+                    if game_number % 50 == 0:
+                        # save progress after a game
+                        save_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{game_number}.pt")
+                        # 모델의 상태 딕셔너리(가중치 등)를 저장
+                        torch.save({
+                            'model_state_dict': model.state_dict(),
+                            'optimizer_state_dict': model.optimizer.state_dict(),
+                            'game_number': game_number,
+                            'global_step': global_counter
+                        }, save_path)
                     break
 
             cost_per_game_average = sum(game_cost_record) / len(game_cost_record)
