@@ -74,9 +74,9 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
                 if r_t1 == float(0):
                     r_t1_combine = [float(0), float(0), float(1)]
                 elif r_t1 == float(-1):
-                    r_t1_combine = [float(0), float(1), float(0)]
+                    r_t1_combine = [float(0), float(1), float(1)]
                 elif r_t1 == float(1):
-                    r_t1_combine = [float(1), float(0), float(0)]
+                    r_t1_combine = [float(1), float(0), float(1)]
                 else:
                     raise ValueError("incorrect r_t1")
 
@@ -94,9 +94,9 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
                 if r_t1 == float(0):
                     r_t1_combine = [float(0), float(0), float(1)]
                 elif r_t1 == float(-1):
-                    r_t1_combine = [float(0), float(1), float(0)]
+                    r_t1_combine = [float(0), float(1), float(1)]
                 elif r_t1 == float(1):
-                    r_t1_combine = [float(1), float(0), float(0)]
+                    r_t1_combine = [float(1), float(0), float(1)]
                 else:
                     raise ValueError("incorrect r_t1")
 
@@ -114,9 +114,9 @@ def get_together_training_batch(s_t0, state_input, reward, train_number, train_l
                 if r_t1 == float(0):
                     r_t1_combine = [float(0), float(0), float(1)]
                 elif r_t1 == float(-1):
-                    r_t1_combine = [float(0), float(1), float(0)]
+                    r_t1_combine = [float(0), float(1), float(1)]
                 elif r_t1 == float(1):
-                    r_t1_combine = [float(1), float(0), float(0)]
+                    r_t1_combine = [float(1), float(0), float(1)]
                 else:
                     raise ValueError("incorrect r_t1")
 

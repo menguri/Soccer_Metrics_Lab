@@ -12,6 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils import handle_trace_length, get_together_training_batch, compromise_state_trace_length
 from configuration import MODEL_TYPE, MAX_TRACE_LENGTH, FEATURE_NUMBER, BATCH_SIZE, GAMMA, H_SIZE, \
     model_train_continue, FEATURE_TYPE, ITERATE_NUM, learning_rate, SPORT, save_mother_dir, hidden_dim, lr, gamma, batch_size, memory_size, max_trace_length, output_dim, num_layers
+from draw_plot import game_plot
 
 LOG_DIR = str(os.getcwd()) + save_mother_dir + "/models/hybrid_sl_log_NN/Scale-three-cut_together_log_train_feature" + str(
     FEATURE_TYPE) + "_batch" + str(
@@ -31,14 +32,14 @@ number_of_total_game = len(DIR_GAMES_ALL)
 
 
 # Experiment tracking : Wandb
-import wandb
-wandb.init(project='Sarsa with LSTM')
-wandb.run.name = 'td_three_prediction_1'
-wandb.run.save()
-args = {
-    "learning_rate": lr,
-}
-wandb.config.update(args)
+# import wandb
+# wandb.init(project='Sarsa with LSTM')
+# wandb.run.name = 'td_three_prediction_1'
+# wandb.run.save()
+# args = {
+#     "learning_rate": lr,
+# }
+# wandb.config.update(args)
 
 
 # Cost 저장
@@ -97,11 +98,11 @@ def train_network(model):
 
     # loading network
     if model_train_continue:
-        check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{8698}.pt")
+        check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{174}.pt")
         checkpoint = torch.load(check_path)  # Load checkpoint
         model.load_state_dict(checkpoint['model_state_dict'])
         model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        check_point_game_number = 135
+        check_point_game_number = 30
         game_number_checkpoint = check_point_game_number % number_of_total_game
         game_number = check_point_game_number
         game_starting_point = 0
@@ -153,11 +154,6 @@ def train_network(model):
                 print("\n" + dir_game)
                 raise ValueError("reward wrong")
             
-            # episode length가 2도 안될 경우, s_t0 값만 있기에 학습 불가
-            # 경기 시작하자마자 슛 -> 슛과 골 이벤트가 기록되어 있어 length=2
-            if len(reward) < 2:
-                continue
-
             # state_input 로드
             state_input = sio.loadmat(DATA_STORE + "/" + dir_game + "/" + state_input_name)
             state_input = (state_input['data'])[0]
@@ -187,19 +183,13 @@ def train_network(model):
                                                                                     state_trace_length,
                                                                                     BATCH_SIZE)
 
-                # get the batch variables
-                s_t0_batch = [d[0] for d in batch_return]
-                s_t1_batch = [d[1] for d in batch_return]
-                r_t_batch = [d[2] for d in batch_return]
-                trace_t0_batch = [d[3] for d in batch_return]
-                trace_t1_batch = [d[4] for d in batch_return]
+                # Convert lists to numpy arrays first
+                s_t0_batch = np.array([d[0] for d in batch_return], dtype=np.float32)
+                s_t1_batch = np.array([d[1] for d in batch_return], dtype=np.float32)
+                r_t_batch = np.array([d[2] for d in batch_return], dtype=np.float32)
+                trace_t0_batch = np.array([d[3] for d in batch_return], dtype=np.int32)
+                trace_t1_batch = np.array([d[4] for d in batch_return], dtype=np.int32)
                 y_batch = []
-
-                # print(f"s_t0 : {s_t0_batch[-1]}")
-                # print(f"s_t1 : {s_t1_batch[-1]}")
-                # print(f"r_t_batch : {r_t_batch[-1]}")
-                # print(f"trace_t0_batch : {trace_t0_batch}")
-                # print(f"trace_t1_batch : {trace_t1_batch}")
 
                 # Target 값 계산
                 trace_t1_batch_tensor = torch.tensor(trace_t1_batch, dtype=torch.int32)
@@ -212,6 +202,7 @@ def train_network(model):
                 # readout_t1_batch = torch.where(home_away_indicator_tensor[:, 1], outputs_t1[:, 0], outputs_t1[:, 1])
 
                 # 필요 시 numpy 배열로 변환 (TensorFlow의 sess.run()과 동일한 역할)
+                outputs_t1 = outputs_t1.detach()
                 readout_t1_batch = outputs_t1.numpy()
 
                 # print(f"readout_t1_batch : {readout_t1_batch}")
@@ -231,10 +222,10 @@ def train_network(model):
                         y_away = float((r_t_batch[i])[1]) + GAMMA * (readout_t1_batch[i]).tolist()[1]
                         y_end = float((r_t_batch[i])[2]) + GAMMA * (readout_t1_batch[i]).tolist()[2]
 
-                        wandb.log({"Home_prob": (readout_t1_batch[i]).tolist()[0]})
-                        wandb.log({"Away_prob": (readout_t1_batch[i]).tolist()[1]})
-                        wandb.log({"End_prob": (readout_t1_batch[i]).tolist()[2]})
-                        # print(f"no terminal or cut : {[y_home, y_away, y_end]}")
+                        # wandb.log({"Home_prob": (readout_t1_batch[i]).tolist()[0]})
+                        # wandb.log({"Away_prob": (readout_t1_batch[i]).tolist()[1]})
+                        # wandb.log({"End_prob": (readout_t1_batch[i]).tolist()[2]})
+                        # # print(f"no terminal or cut : {[y_home, y_away, y_end]}")
                         y_batch.append([y_home, y_away, y_end])
 
                 # y_batch를 텐서로 변환
@@ -249,8 +240,8 @@ def train_network(model):
                 # 출력 및 디버깅 정보
                 diff = torch.mean(torch.abs(y_batch_tensor - read_out)).item()
                 cost_out = torch.mean(torch.square(y_batch_tensor - read_out)).item()
-                wandb.log({"td_diff": diff})
-                wandb.log({"td_cost": cost_out})
+                # wandb.log({"td_diff": diff})
+                # wandb.log({"td_cost": cost_out})
 
                 v_diff_record.append(diff)
 
@@ -278,7 +269,7 @@ def train_network(model):
                     game_diff_record_dict.update({dir_game: v_diff_record_average})
 
 
-                    if game_number % 50 == 0:
+                    if game_number % 3 == 0:
                         # save progress after a game
                         save_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{game_number}.pt")
                         # 모델의 상태 딕셔너리(가중치 등)를 저장
@@ -286,8 +277,11 @@ def train_network(model):
                             'model_state_dict': model.state_dict(),
                             'optimizer_state_dict': model.optimizer.state_dict(),
                             'game_number': game_number,
-                            'global_step': global_counter
+                            'global_step': global_counter,
+                            'epoch' : iteration_now
                         }, save_path)
+                        # plot 그리기
+                        game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, game_number, 7537, game_number)
                     break
 
             cost_per_game_average = sum(game_cost_record) / len(game_cost_record)

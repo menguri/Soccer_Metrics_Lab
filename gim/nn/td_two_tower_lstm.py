@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
+# 문제를 진단하기 위해 anomaly detection 활성화
+torch.autograd.set_detect_anomaly(True)
+
 class TD_Prediction_TT_Embed(nn.Module):
     def __init__(self, feature_number, h_size, max_trace_length, learning_rate,
                  output_layer_size=3, lstm_layer_num=2, dense_layer_num=2, model_name="tt_lstm"):
@@ -40,8 +43,9 @@ class TD_Prediction_TT_Embed(nn.Module):
         # Loss function
         self.loss_fn = nn.MSELoss()
         
-        # Optimizer
-        self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        # Separate optimizers for Home and Away
+        self.optimizer_home = optim.Adam(list(self.lstm_home.parameters()) + list(self.embed_home.parameters()), lr=learning_rate)
+        self.optimizer_away = optim.Adam(list(self.lstm_away.parameters()) + list(self.embed_away.parameters()), lr=learning_rate)
     
     def forward(self, rnn_input, trace_lengths, home_away_indicator):
         # Home LSTM
@@ -75,41 +79,31 @@ class TD_Prediction_TT_Embed(nn.Module):
         
         return x
     
-    def compute_loss(self, predictions, targets, home_away_indicator):
-        # prediction에서 home_tower, away_tower 쓴 것만 걸러주면 된다.
-        home_loss = self.loss_fn(predictions[home_away_indicator], targets[home_away_indicator])
-        away_loss = self.loss_fn(predictions[~home_away_indicator], targets[~home_away_indicator])
-        return home_loss, away_loss
+    def compute_loss(self, predictions, targets, home_away_indicator, n):
+        if n == 0:
+            loss = self.loss_fn(predictions[home_away_indicator], targets[home_away_indicator])
+        else:
+            loss = self.loss_fn(predictions[~home_away_indicator], targets[~home_away_indicator])
+        return loss
     
     def train_step(self, rnn_input, trace_lengths, home_away_indicator, y):
-        self.optimizer.zero_grad()
-        predictions = self.forward(rnn_input, trace_lengths, home_away_indicator)
-        home_loss, away_loss = self.compute_loss(predictions, y, home_away_indicator)
-
         # Transition의 Loss는 한 개의 tower에만 전달된다.
-        # Compute gradients for home tower
-        home_loss.backward(retain_graph=True)
+        # Compute gradients and update for Home tower
+        predictions = self.forward(rnn_input, trace_lengths, home_away_indicator)
+
+        # Zero out gradients for both optimizers
+        self.optimizer_home.zero_grad()
+        self.optimizer_away.zero_grad()
+
+        # Compute gradients and update for Home tower
+        home_loss = self.compute_loss(predictions, y, home_away_indicator, 0)        
+        home_loss.backward(retain_graph=True)   
+        self.optimizer_home.step()
         
-        # Zero out gradients for away tower
-        for param in self.lstm_away.parameters():
-            if param.grad is not None:
-                param.grad.data.zero_()
-        for param in self.embed_away.parameters():
-            if param.grad is not None:
-                param.grad.data.zero_()
-        
-        # Compute gradients for away tower
+        # Compute gradients and update for Away tower
+        away_loss = self.compute_loss(predictions, y, home_away_indicator, 1)
         away_loss.backward()
-
-        # Zero out gradients for home tower
-        for param in self.lstm_home.parameters():
-            if param.grad is not None:
-                param.grad.data.zero_()
-        for param in self.embed_home.parameters():
-            if param.grad is not None:
-                param.grad.data.zero_()
-
-        self.optimizer.step()
+        self.optimizer_away.step()
         
         return home_loss.item(), away_loss.item(), predictions
 

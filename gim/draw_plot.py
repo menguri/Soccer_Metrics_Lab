@@ -35,81 +35,108 @@ SAVED_NETWORK = str(os.getcwd()) + save_mother_dir + "/models/hybrid_sl_saved_NN
     learning_rate) + "_" + str(MODEL_TYPE) + "_MaxTL" + str(MAX_TRACE_LENGTH)
 
 
-# 모델 불러오기
-# loading network
-model = TD_Prediction_TT_Embed(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate)
-check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{1000}.pt")
-checkpoint = torch.load(check_path)  # Load checkpoint
-model.load_state_dict(checkpoint['model_state_dict'])
-model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-game_starting_point = 0
+MODEL_VERSION = 7300
 
 
-# 데이터 로드
-game_id = 7525
-DATA_STORE = "./datastore"
-game_list = []
-trace_length_list = []
-reward_list = []
-
-for epi in [1,2,3,4,5,6]:
-    dir_game = f'{game_id}_{epi}'
-    # load data
-    state = sio.loadmat(DATA_STORE + "/" + dir_game + "/" + 'rnn_input')
-    reward = sio.loadmat(DATA_STORE + "/" + dir_game + "/" + 'rnn_reward')
-    trace_length = sio.loadmat(DATA_STORE + "/" + dir_game + "/" + 'trace')
-    game_list += (state['data'])[0].tolist()
-    reward_list += (reward['data'])[0].tolist()
-    trace_length_list += (trace_length['data'])[0].tolist()
-
-GTR = [state[-1][0] for state in game_list]
-GD = [state[-1][4] for state in game_list]
-home_away_indicator = [1 if state[-1][-1] > 1 else 0 for state in game_list]
-
-# Prediction
-state_trace_length, state_input, reward = compromise_state_trace_length(trace_length_list, game_list, reward_list, MAX_TRACE_LENGTH)
-
-# get the batch variables
-y_batch = []
-
-# Target 값 계산
-trace_batch_tensor = torch.tensor(state_trace_length, dtype=torch.int32)
-s_batch_tensor = torch.tensor(state_input, dtype=torch.float32)
-home_away_indicator_tensor = torch.tensor(home_away_indicator, dtype=torch.bool)
-# 모델을 평가 모드로 전환
-model.eval()
-# forward를 통해 출력 계산
-with torch.no_grad():
-    outputs_t0 = model.forward(s_batch_tensor, trace_batch_tensor, home_away_indicator_tensor)
-# 필요 시 numpy 배열로 변환 (TensorFlow의 sess.run()과 동일한 역할)
-readout_t1_batch = outputs_t0.numpy()
-
-
-def plot_qvalue_goal(GTR, GD, state, y, game_id):
+def plot_qvalue_goal(GTR, GD, SHOT_TRY, state, y, game_id, ITER):
     print(f"len gtr : {len(GTR)}")
     print(f"len GD : {len(GD)}")
     print(f"len y : {len(y)}")
-    gtr = GTR
-    gd = GD
     
     fig, ax1 = plt.subplots(figsize=(15, 10))
     ax1.set_xlabel('GTR')
     ax1.set_ylabel('Prob')
-    line1 = ax1.plot(gtr, y[:,0], 'red', label='Home')
-    line2 = ax1.plot(gtr, y[:,1], 'blue', label='Away')
-    line3 = ax1.plot(gtr, y[:,2], 'yellow', label='Neither')
+    line1 = ax1.plot(GTR, y[:,0], 'red', label='Home', linestyle="--")
+    line2 = ax1.plot(GTR, y[:,1], 'blue', label='Away', linestyle="--")
+    line3 = ax1.plot(GTR, y[:,2], 'yellow', label='Neither', linestyle="--")
 
     ax2 = ax1.twinx()
     ax2.set_ylabel('GD')
-    line4 = ax2.plot(gtr, gd, 'deeppink', label='Goal Difference', linestyle="--")
+    line4 = ax2.plot(GTR, GD, 'deeppink', label='Goal Difference')
 
     lines = line1 + line2 + line3 + line4
     labels = [l.get_label() for l in lines]
     ax1.legend(lines, labels, loc='upper right')
 
     plt.gca().invert_xaxis()  # x축 반전
+
+    # 샷이 일어난 순간을 수직선으로 표시
+    for shot in SHOT_TRY:
+        color = 'red' if shot[1] == 1 else 'blue'
+        shot_team = 'H' if shot[1] == 1 else 'A'
+        plt.vlines(x=shot[0], ymin=-0.001, ymax=0.003, color=color, linewidth=2, alpha=0.7)
+        plt.text(shot[0], 0.0035, shot_team, color=color, fontsize=12, ha='center')
+
     plt.title(f'{game_id} Goal Probability')
-    plt.savefig(f'./plot/goal_prob/{game_id}_plot.jpg')
+    plt.savefig(f'./plot/goal_prob/{game_id}_{ITER}.jpg')
 
 
-plot_qvalue_goal(GTR, GD, np.array(game_list), readout_t1_batch, game_id)
+
+def game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, MODEL_VERSION, GAME_ID, ITER):
+    # loading network
+    # 모델 불러오기
+    model = TD_Prediction_TT_Embed(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate)
+    check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{MODEL_VERSION}.pt")
+    checkpoint = torch.load(check_path)  # Load checkpoint
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    game_starting_point = 0
+
+    # 데이터 로드
+    game_id = GAME_ID
+
+    DATA_STORE = "./datastore"
+    game_list = []
+    trace_length_list = []
+    reward_list = []
+
+    # load data
+    dir_game = f'{game_id}'
+    state = sio.loadmat(DATA_STORE + "/" + dir_game + "/" + 'rnn_input')
+    reward = sio.loadmat(DATA_STORE + "/" + dir_game + "/" + 'rnn_reward')
+    trace_length = sio.loadmat(DATA_STORE + "/" + dir_game + "/" + 'trace')
+    game_list += (state['data'])[0].tolist()
+    reward_list += (reward['data'])[0].tolist()
+    trace_length_list += (trace_length['data'])[0].tolist()
+    
+    
+    GTR = []
+    GD = []
+    SHOT_TRY = []
+    for state in game_list:
+        GTR.append(state[-1][0])
+        GD.append(state[-1][4])
+        if state[-1][22] == 1 or state[-1][29] == 1 or state[-1][32] == 1:
+            SHOT_TRY.append([state[-1][0], round(state[-1][10])])
+        if state[-1][31] == 1 :
+            SHOT_TRY.append([state[-1][0], -round(state[-1][10])])        
+
+
+    home_away_indicator = [1 if state[-1][-1] > 1 else 0 for state in game_list]
+    # Prediction
+    state_trace_length, state_input, reward = compromise_state_trace_length(trace_length_list, game_list, reward_list, MAX_TRACE_LENGTH)
+
+
+    # get the batch variables
+    y_batch = []
+
+    # Target 값 계산
+    trace_batch_tensor = torch.tensor(state_trace_length, dtype=torch.int32)
+    s_batch_tensor = torch.tensor(state_input, dtype=torch.float32)
+    home_away_indicator_tensor = torch.tensor(home_away_indicator, dtype=torch.bool)
+    # 모델을 평가 모드로 전환
+    model.eval()
+    # forward를 통해 출력 계산
+    with torch.no_grad():
+        outputs_t0 = model.forward(s_batch_tensor, trace_batch_tensor, home_away_indicator_tensor)
+    # 필요 시 numpy 배열로 변환 (TensorFlow의 sess.run()과 동일한 역할)
+    readout_t1_batch = outputs_t0.numpy()
+    plot_qvalue_goal(GTR, GD, SHOT_TRY, np.array(game_list), readout_t1_batch, game_id, ITER)
+
+
+# Plot 그리기
+# GAME_ID = 7537
+# ITER = 1
+# MODEL_VERSION = 60
+
+# game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, MODEL_VERSION, GAME_ID, ITER)
