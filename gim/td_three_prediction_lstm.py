@@ -32,14 +32,14 @@ number_of_total_game = len(DIR_GAMES_ALL)
 
 
 # Experiment tracking : Wandb
-# import wandb
-# wandb.init(project='Sarsa with LSTM')
-# wandb.run.name = 'td_three_prediction_1'
-# wandb.run.save()
-# args = {
-#     "learning_rate": lr,
-# }
-# wandb.config.update(args)
+import wandb
+wandb.init(project='Sarsa with LSTM', resume="allow", id="Labs_2")
+wandb.run.name = 'td_three_prediction_2'
+wandb.run.save()
+args = {
+    "learning_rate": lr,
+}
+wandb.config.update(args)
 
 
 # Cost 저장
@@ -98,11 +98,12 @@ def train_network(model):
 
     # loading network
     if model_train_continue:
-        check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{174}.pt")
+        check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{500}.pt")
         checkpoint = torch.load(check_path)  # Load checkpoint
         model.load_state_dict(checkpoint['model_state_dict'])
-        model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        check_point_game_number = 30
+        model.optimizer_home.load_state_dict(checkpoint['home_optimizer_state_dict'])
+        model.optimizer_away.load_state_dict(checkpoint['away_optimizer_state_dict'])
+        check_point_game_number = checkpoint['check_point_game_number']
         game_number_checkpoint = check_point_game_number % number_of_total_game
         game_number = check_point_game_number
         game_starting_point = 0
@@ -222,10 +223,10 @@ def train_network(model):
                         y_away = float((r_t_batch[i])[1]) + GAMMA * (readout_t1_batch[i]).tolist()[1]
                         y_end = float((r_t_batch[i])[2]) + GAMMA * (readout_t1_batch[i]).tolist()[2]
 
-                        # wandb.log({"Home_prob": (readout_t1_batch[i]).tolist()[0]})
-                        # wandb.log({"Away_prob": (readout_t1_batch[i]).tolist()[1]})
-                        # wandb.log({"End_prob": (readout_t1_batch[i]).tolist()[2]})
-                        # # print(f"no terminal or cut : {[y_home, y_away, y_end]}")
+                        wandb.log({"Home_prob": (readout_t1_batch[i]).tolist()[0]})
+                        wandb.log({"Away_prob": (readout_t1_batch[i]).tolist()[1]})
+                        wandb.log({"End_prob": (readout_t1_batch[i]).tolist()[2]})
+                        # print(f"no terminal or cut : {[y_home, y_away, y_end]}")
                         y_batch.append([y_home, y_away, y_end])
 
                 # y_batch를 텐서로 변환
@@ -240,8 +241,8 @@ def train_network(model):
                 # 출력 및 디버깅 정보
                 diff = torch.mean(torch.abs(y_batch_tensor - read_out)).item()
                 cost_out = torch.mean(torch.square(y_batch_tensor - read_out)).item()
-                # wandb.log({"td_diff": diff})
-                # wandb.log({"td_cost": cost_out})
+                wandb.log({"td_diff": diff})
+                wandb.log({"td_cost": cost_out})
 
                 v_diff_record.append(diff)
 
@@ -269,19 +270,21 @@ def train_network(model):
                     game_diff_record_dict.update({dir_game: v_diff_record_average})
 
 
-                    if game_number % 3 == 0:
+                    if game_number % 100 == 0:
                         # save progress after a game
                         save_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{game_number}.pt")
                         # 모델의 상태 딕셔너리(가중치 등)를 저장
                         torch.save({
                             'model_state_dict': model.state_dict(),
-                            'optimizer_state_dict': model.optimizer.state_dict(),
-                            'game_number': game_number,
+                            'home_optimizer_state_dict' : model.optimizer_home.state_dict(),
+                            'away_optimizer_state_dict' : model.optimizer_away.state_dict(),
+                            'check_point_game_number': game_number,
                             'global_step': global_counter,
                             'epoch' : iteration_now
                         }, save_path)
                         # plot 그리기
-                        game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, game_number, 7537, game_number)
+                        for game_id in [7537, 7550, 8649]:
+                            game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, game_number, game_id)
                     break
 
             cost_per_game_average = sum(game_cost_record) / len(game_cost_record)

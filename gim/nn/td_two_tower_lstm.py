@@ -89,21 +89,23 @@ class TD_Prediction_TT_Embed(nn.Module):
     def train_step(self, rnn_input, trace_lengths, home_away_indicator, y):
         # Transition의 Loss는 한 개의 tower에만 전달된다.
         # Compute gradients and update for Home tower
-        predictions = self.forward(rnn_input, trace_lengths, home_away_indicator)
+        # predictions = self.forward(rnn_input, trace_lengths, home_away_indicator)
 
         # Zero out gradients for both optimizers
         self.optimizer_home.zero_grad()
         self.optimizer_away.zero_grad()
-
-        # Compute gradients and update for Home tower
-        home_loss = self.compute_loss(predictions, y, home_away_indicator, 0)        
-        home_loss.backward(retain_graph=True)   
-        self.optimizer_home.step()
         
         # Compute gradients and update for Away tower
+        predictions = self.forward(rnn_input, trace_lengths, home_away_indicator)
         away_loss = self.compute_loss(predictions, y, home_away_indicator, 1)
-        away_loss.backward()
+        away_loss.backward(retain_graph=True)
         self.optimizer_away.step()
+
+        # Compute gradients and update for Home tower
+        predictions = self.forward(rnn_input, trace_lengths, home_away_indicator)
+        home_loss = self.compute_loss(predictions, y, home_away_indicator, 0)        
+        home_loss.backward()   
+        self.optimizer_home.step()
         
         return home_loss.item(), away_loss.item(), predictions
 

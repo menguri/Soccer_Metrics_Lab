@@ -72,15 +72,16 @@ def plot_qvalue_goal(GTR, GD, SHOT_TRY, state, y, game_id, ITER):
 
 
 
-def game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, MODEL_VERSION, GAME_ID, ITER):
+def game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, MODEL_VERSION, GAME_ID):
     # loading network
     # 모델 불러오기
     model = TD_Prediction_TT_Embed(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate)
     check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{MODEL_VERSION}.pt")
     checkpoint = torch.load(check_path)  # Load checkpoint
     model.load_state_dict(checkpoint['model_state_dict'])
-    model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    game_starting_point = 0
+    model.optimizer_home.load_state_dict(checkpoint['home_optimizer_state_dict'])
+    model.optimizer_away.load_state_dict(checkpoint['away_optimizer_state_dict'])
+    check_point_game_number = checkpoint['check_point_game_number']
 
     # 데이터 로드
     game_id = GAME_ID
@@ -131,7 +132,7 @@ def game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED
         outputs_t0 = model.forward(s_batch_tensor, trace_batch_tensor, home_away_indicator_tensor)
     # 필요 시 numpy 배열로 변환 (TensorFlow의 sess.run()과 동일한 역할)
     readout_t1_batch = outputs_t0.numpy()
-    plot_qvalue_goal(GTR, GD, SHOT_TRY, np.array(game_list), readout_t1_batch, game_id, ITER)
+    plot_qvalue_goal(GTR, GD, SHOT_TRY, np.array(game_list), readout_t1_batch, game_id, check_point_game_number)
 
 
 # Plot 그리기
