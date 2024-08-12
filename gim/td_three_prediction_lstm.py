@@ -98,15 +98,17 @@ def train_network(model):
 
     # loading network
     if model_train_continue:
-        check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{500}.pt")
+        check_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{1900}.pt")
         checkpoint = torch.load(check_path)  # Load checkpoint
         model.load_state_dict(checkpoint['model_state_dict'])
         model.optimizer_home.load_state_dict(checkpoint['home_optimizer_state_dict'])
         model.optimizer_away.load_state_dict(checkpoint['away_optimizer_state_dict'])
         check_point_game_number = checkpoint['check_point_game_number']
+        epoch = checkpoint['epoch']
         game_number_checkpoint = check_point_game_number % number_of_total_game
         game_number = check_point_game_number
         game_starting_point = 0
+        print(f"Interation Now : {epoch}")
         print("Successfully loaded:", SAVED_NETWORK)
     else:
         print("Could not find old network weights")
@@ -292,6 +294,22 @@ def train_network(model):
                                      "cost_per_game_average": cost_per_game_average}])
 
         game_diff_record_all.append(game_diff_record_dict)
+
+    # 마지막 모델
+    # save progress after a game
+    save_path = os.path.join(SAVED_NETWORK, f"{SPORT}-game-{game_number}.pt")
+    # 모델의 상태 딕셔너리(가중치 등)를 저장
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'home_optimizer_state_dict' : model.optimizer_home.state_dict(),
+        'away_optimizer_state_dict' : model.optimizer_away.state_dict(),
+        'check_point_game_number': game_number,
+        'global_step': global_counter,
+        'epoch' : iteration_now
+    }, save_path)
+    # plot 그리기
+    for game_id in [7537, 7550, 8649]:
+        game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, game_number, game_id)
 
 
 def train_start():

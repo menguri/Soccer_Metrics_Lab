@@ -113,7 +113,7 @@ def game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED
             SHOT_TRY.append([state[-1][0], -round(state[-1][10])])        
 
 
-    home_away_indicator = [1 if state[-1][-1] > 1 else 0 for state in game_list]
+    home_away_indicator = [1 if state[-1][10] > 1 else 0 for state in game_list]
     # Prediction
     state_trace_length, state_input, reward = compromise_state_trace_length(trace_length_list, game_list, reward_list, MAX_TRACE_LENGTH)
 
@@ -136,8 +136,9 @@ def game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED
 
 
 # Plot 그리기
-# GAME_ID = 7537
-# ITER = 1
-# MODEL_VERSION = 60
+MODEL_VERSION = 1920
+DATA_STORE = "./datastore"
+DIR_GAMES_ALL = os.listdir(DATA_STORE)
 
-# game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, MODEL_VERSION, GAME_ID, ITER)
+for GAME_ID in DIR_GAMES_ALL: 
+    game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, MODEL_VERSION, GAME_ID)
