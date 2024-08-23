@@ -136,9 +136,9 @@ def game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED
 
 
 # Plot 그리기
-MODEL_VERSION = 1920
-DATA_STORE = "./datastore"
-DIR_GAMES_ALL = os.listdir(DATA_STORE)
+# MODEL_VERSION = 1920
+# DATA_STORE = "./datastore"
+# DIR_GAMES_ALL = os.listdir(DATA_STORE)
 
-for GAME_ID in DIR_GAMES_ALL: 
-    game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, MODEL_VERSION, GAME_ID)
+# for GAME_ID in DIR_GAMES_ALL: 
+#     game_plot(FEATURE_NUMBER, hidden_dim, MAX_TRACE_LENGTH, learning_rate, SAVED_NETWORK, SPORT, MODEL_VERSION, GAME_ID)

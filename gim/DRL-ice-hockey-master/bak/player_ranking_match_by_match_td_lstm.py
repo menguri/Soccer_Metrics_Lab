@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 
 class GoalImpactMetric:
 
+    # 모델, Configuration, Data 불러오기
+    # 모델로 예측한 Q value, 선수 Unique 값(시즌 내 모든 선수들에 대한 정보) 추출 완료 상태에서 시작
     def __init__(self):
         self.FEATURE_TYPE = 5
         self.calibration = True
@@ -73,6 +75,7 @@ class GoalImpactMetric:
     # state_data_name = "model_state_cut_together_predict_Fea{0}_Iter{1}_lr{2}_Batch{3}_MaxLength{4}_Type{5}".format(
     #     str(FEATURE_TYPE), str(ITERATE_NUM), str(6), str(8), str(MAX_TRACE_LENGTH), MODEL_TYPE)
 
+    # 이미 경기 중 Q_value는 계산 > 각 선수들의 Q value를 합산
     def aggregate_values(self):
         """
         aggregate value for each player
@@ -146,6 +149,7 @@ class GoalImpactMetric:
                     # {playerId: {"value": player_value_number, "state value": player_state_value_number}}), "state value": player_state_value_number}})
                     # break
 
+    # 
     def aggregate_diff_values(self):
         """
         aggregate value for each player
@@ -447,9 +451,10 @@ class GoalImpactMetric:
                     # {playerId: {"value": player_value_number, "state value": player_state_value_number}}), "state value": player_state_value_number}})
                     # break
 
+
+    # 경기별 GIM value를 구하고 싶을 때
     def aggregate_match_values(self, game_target_dir, teamId_target):
         """
-
         :param game_target_dir:
         :param teamId_target:
         :return:

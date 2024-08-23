@@ -3,8 +3,8 @@
 #### STEP 1. xT, VAEP, GIM 등 다양한 metrics 구현
 
 GIM's Model 설명 <br>
-1-1. python play_model.py >> 훈련 시작 <br>
-1-2. models.py는 SARSA, nn/two_tower_lstm.py는 two tower lstm을 구현한 파일 <br>
+1-1. python td_three_prediction_lstm.py >> 훈련 시작 <br>
+1-2. tuils.py는 state_input 구조 제작, nn/td_two_tower_lstm.py는 two tower lstm을 구현한 파일 <br>
 1-3. preprocess_data.py, labels.py는 데이터 전처리 utils <br> 
 
 
