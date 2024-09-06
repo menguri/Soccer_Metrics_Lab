@@ -43,9 +43,14 @@ class TD_Prediction_TT_Embed(nn.Module):
         # Loss function
         self.loss_fn = nn.MSELoss()
         
-        # Separate optimizers for Home and Away
-        self.optimizer_home = optim.Adam(list(self.lstm_home.parameters()) + list(self.embed_home.parameters()), lr=learning_rate)
-        self.optimizer_away = optim.Adam(list(self.lstm_away.parameters()) + list(self.embed_away.parameters()), lr=learning_rate)
+        # Separate optimizers for Home and Away including Dense layers
+        self.optimizer_home = optim.Adam(list(self.lstm_home.parameters()) + 
+                                         list(self.embed_home.parameters()) + 
+                                         list(self.dense_layers.parameters()), lr=learning_rate)
+                                         
+        self.optimizer_away = optim.Adam(list(self.lstm_away.parameters()) + 
+                                         list(self.embed_away.parameters()) + 
+                                         list(self.dense_layers.parameters()), lr=learning_rate)
     
     def forward(self, rnn_input, trace_lengths, home_away_indicator):
         # Home LSTM
